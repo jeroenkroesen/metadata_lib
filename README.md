@@ -7,5 +7,5 @@ To install this library using `pip`:
 3. Run the command:
 
 ```bash
-pip install git+ssh://git@github.com/Dedimo/metadata_lib.git@main
+pip install git+ssh://git@github.com/jeroenkroesen/metadata_lib.git@main
 ```
