@@ -177,6 +177,7 @@ class MetadataStructure():
         self.md_obj_with_unids = generate_unids(self.by_id)
         self.by_unid = create_unid_indexes(self.md_obj_with_unids)
         self.integrated = integrate_pipelines(deepcopy(self.by_id))
+        self.dag_config = integrated_to_dag_config(deepcopy(self.integrated))
         unidseverywhere = all_ids_to_unids(deepcopy(self.by_id))
         records = metadata_obj_to_records(unidseverywhere)
         self.view = metadata_records_to_dataframes(records)
