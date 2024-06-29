@@ -544,6 +544,42 @@ def flatten_instance(
 
 
 
+def integrated_to_dag_config(
+    integrated: dict[ str, list[ dict[str,any] ] ]
+) -> dict[ str, list[any]]:
+    """Integrated metadata and process it to config that is ready to be 
+    consumed from DAGs.
+
+    Parameters
+    ----------
+    integrated : dict[ str, list[ dict[str,any] ] ]
+        A deeply connected (integrated) pipeline object
+    
+    Returns
+    -------
+    dict[ str, list[any]]
+        Integrated conf for all pipelines, ready for consumption through a 
+        DAG
+    """
+    enabled_pipelines = []
+    for pl in integrated:
+        if pl.enabled:
+            enabled_pipelines.append(pl)
+    conf = {}
+    for pl in enabled_pipelines:
+        instance_list = []
+        for i, instance in enumerate(pl.input_output):
+            instance_list.append(flatten_instance(
+                pipeline=pl,
+                instance_nr=i,
+                objectify_output=False
+            ))
+        pipeline_identifier = pl.unid[:pl.unid.rfind('.')]
+        conf[pipeline_identifier] = instance_list
+    return conf
+
+
+
 def metadata_objects_to_json(
     md_obj: dict[ str, list[any] ]
 ) -> dict[ str, list[any] ]:

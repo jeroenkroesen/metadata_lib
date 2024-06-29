@@ -20,7 +20,7 @@ from . build import (
     read_metadata, write_metadata, metadata_json_to_objects, create_id_indexes, 
     generate_unids, create_unid_indexes, integrate_pipelines, 
     metadata_objects_to_json, unid_refs_to_ids, objects_from_unid_index, 
-    objects_from_id_index
+    objects_from_id_index, integrated_to_dag_config
 )
 from . view import (
     all_ids_to_unids, metadata_obj_to_records, metadata_records_to_dataframes
@@ -121,6 +121,8 @@ class MetadataStructure():
     integrated : integrated: dict[ str, list[ dict[str,any] ] ] (Default: None)
         A deep structure where id references to other objects are replaced 
         with that full object.
+    dag_config : dict[ str, list[any]]
+        Config of all enabled pipelines that is ready to be consumed by a DAG
     view : A dict of entity_types as keys and dataframes as values. This is 
         optimized for human reading of metadata.
     valid : bool (Default: False)
@@ -140,6 +142,7 @@ class MetadataStructure():
     by_id: dict[ str,dict[int, Namespace | Schema | System | Data_entity | Pipeline]] = None
     by_unid: dict[ str,dict[str, Namespace | Schema | System | Data_entity | Pipeline]] = None
     integrated: dict[ str, list[ dict[str,any] ] ] = None
+    dag_config: dict[ str, list[any]] = None
     view: dict[str,pd.DataFrame] = None
     valid: bool = False
     report: dict[str,any] = None
@@ -158,6 +161,7 @@ class MetadataStructure():
         self.md_obj_with_unids = generate_unids(self.by_id)
         self.by_unid = create_unid_indexes(self.md_obj_with_unids)
         self.integrated = integrate_pipelines(deepcopy(self.by_id))
+        self.dag_config = integrated_to_dag_config(deepcopy(self.integrated))
         unidseverywhere = all_ids_to_unids(deepcopy(self.by_id))
         records = metadata_obj_to_records(unidseverywhere)
         self.view = metadata_records_to_dataframes(records)
