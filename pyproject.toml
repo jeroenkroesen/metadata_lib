@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "metadata_lib"
-version = "0.1.0"
+version = "0.1.1.dev.01"
 description = "Library for managing a simple metadata layers for a dataplatform."
 authors = ["Jeroen Kroesen <jeroen@kroesen.nu>"]
-license = "Not licensed"
+license = "GNU AFFERO GENERAL PUBLIC LICENSE"
 readme = "README.md"
 
 [tool.poetry.dependencies]
