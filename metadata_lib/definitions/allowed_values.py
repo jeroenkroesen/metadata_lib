@@ -36,8 +36,7 @@ ENTITIES = [
     'schemas',
     'systems',
     'data_entities', 
-    'pipelines',
-    'dag_config'
+    'pipelines'
 ]
 
 

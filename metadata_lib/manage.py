@@ -17,8 +17,8 @@ import pandas as pd
 from rich import print
 from . schemas import (Namespace, Schema, System, Data_entity, Pipeline)
 from . build import (
-    read_metadata, write_metadata, metadata_json_to_objects, create_id_indexes, 
-    generate_unids, create_unid_indexes, integrate_pipelines, 
+    read_metadata, write_metadata, write_dag_config, metadata_json_to_objects, 
+    create_id_indexes, generate_unids, create_unid_indexes, integrate_pipelines, 
     metadata_objects_to_json, unid_refs_to_ids, objects_from_unid_index, 
     objects_from_id_index, integrated_to_dag_config
 )
@@ -329,7 +329,8 @@ class MetadataManager():
         self.current = MetadataStructure(
             read_metadata(
                 storage_reader=self.store.storage_adapter.read,
-                location=self.store.address
+                location=self.store.address,
+                exclude_entities='dag_config'
         ))
     
 
@@ -353,13 +354,15 @@ class MetadataManager():
             self.workspace = MetadataStructure(
                 read_metadata(
                     storage_reader=self.store.storage_adapter.read,
-                    location=self.store.address
+                    location=self.store.address,
+                    exclude_entities='dag_config'
             ))
         elif source == 'stash':
             self.workspace = MetadataStructure(
                 read_metadata(
                     storage_reader=self.stash.storage_adapter.read,
-                    location=self.stash.address
+                    location=self.stash.address,
+                    exclude_entities='dag_config'
             ))
         else:
             raise ValueError(f'Source must be store or stash. Not {source}')
@@ -395,6 +398,12 @@ class MetadataManager():
             location=self.stash.address,
             metadata_obj_or_json=self.workspace.md_objects
         )
+        print('Writing all DAG config in Workspace to Stash.')
+        write_dag_config(
+            storage_writer=self.stash.storage_adapter.write, 
+            location=self.stash.address,
+            dag_config=self.workspace.dag_config
+        )
         print('Write complete')
         return True
     
@@ -414,12 +423,18 @@ class MetadataManager():
             print('Consider writing to stash instead of store.')
             print('Stash will accept an invalid workspace with a warning.')
             return False
-        # Performing write to store
+        # Performing write to store of metadata
         print('Workspace is a valid structure. Writing to Store.')
         write_metadata(
             storage_writer=self.store.storage_adapter.write, 
             location=self.store.address,
             metadata_obj_or_json=self.workspace.md_objects
+        )
+        print('Writing all DAG config in Workspace to Store.')
+        write_dag_config(
+            storage_writer=self.store.storage_adapter.write, 
+            location=self.store.address,
+            dag_config=self.workspace.dag_config
         )
         print('Write complete')
         # Reload current from store

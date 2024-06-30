@@ -113,7 +113,7 @@ class LocalFilesystem(StorageAdapter):
         self,
         location: str,
         md_entity_type: str,
-        entity_list: list[ dict[str,any] ]
+        data_to_write: list[ dict[str,any] ] | dict[ str, list[any]]
     ) -> None:
         """Write a single metadata entity file to local filesystem.
 
@@ -125,11 +125,14 @@ class LocalFilesystem(StorageAdapter):
         md_entity_type : str
             The entity type to read and load. Should be a valid entity_type 
             according to metadata_lib.definitions.allowed_values.ENTITIES.
-        entity_list : list[ dict[str,any] ]
-            A list of dicts where each dict is an entity of the specified type.
-            The dicts should be json compatible. We suggest running 
-            entities through FastAPI's json_compatible_encoder before passing 
-            them to a storage adapter for writing.
+        data_to_write : list[ dict[str,any] ] | dict[ str, list[any]]
+            In case of metadata entities:
+                A list of dicts where each dict is an entity of the specified type.
+                The dicts should be json compatible. We suggest running 
+                entities through FastAPI's json_compatible_encoder before passing 
+                them to a storage adapter for writing.
+            In case of dag_config:
+                A dictionary of dag_identifier : dag_config
         
         Raises
         ------
@@ -144,9 +147,15 @@ class LocalFilesystem(StorageAdapter):
             # In localstorage, we only expect a string with the directory
             msg = f'Localfilesystem expects location as a string, not {type(location).__name__}.'
             raise TypeError(msg)
+        if md_entity_type == 'dag_config':
+            # Create full path to file
+            md_file = Path(location).joinpath(f'{md_entity_type}.json').resolve()
+            with open(md_file, 'w') as f:
+                json.dump(data_to_write, f, indent=4)
+            return
         if md_entity_type not in ENTITIES:
             raise ValueError(f'{md_entity_type} is not a valid metadata entity.')
         # Create full path to file
         md_file = Path(location).joinpath(f'{md_entity_type}.json').resolve()
         with open(md_file, 'w') as f:
-            json.dump(entity_list, f, indent=4)
+            json.dump(data_to_write, f, indent=4)
