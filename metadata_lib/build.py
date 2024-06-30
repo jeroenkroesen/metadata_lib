@@ -14,7 +14,8 @@ from typing import Callable
 def read_metadata(
     storage_reader: Callable[ [str | dict[any,any], str], list[dict[any, any]]], 
     location: str | dict[any, any],
-    md_entities: list[str] | None = None
+    md_entities: list[str] | None = None,
+    exclude_entities: list[str] | None = None
 ) -> dict[ str, list[ dict[str,any] ] ]:
     """Read JSON metadata into a dict/list structure
 
@@ -52,7 +53,8 @@ def read_metadata(
     for entity in md_entities:
         if entity not in ENTITIES:
             raise ValueError(f'{entity} is not a valid metadata entity.')
-        md_json[entity] = storage_reader(location, entity)
+        if entity not in exclude_entities:
+            md_json[entity] = storage_reader(location, entity)
     return md_json
 
 
@@ -97,6 +99,48 @@ def write_metadata(
             ent_type,
             ent_list
         )
+
+
+
+def write_dag_config(
+    storage_writer: Callable[ [str | dict[any,any], str, list[dict[str,any]]], None], 
+    location: str | dict[any, any],
+    dag_config: dict[ str, list[any]]
+) -> None:
+    """Write dag_config to storage, overwriting any existing file.
+
+    Parameters
+    ----------
+    storage_writer : Callable[ [str | dict[any,any], str, list[dict[str,any]]], None]
+        A function to write metadata to a storage location. It takes as it's 
+        arguments:
+        - location : str | dict[any,any]
+            Location details for the storage mechanism where metadata can be 
+            stored.
+        - md_entity_type : str
+            The type of entity to write. Types are enumerated in 
+            metadata_lib.definitions.allowed_values.ENTITIES
+        - entity_list : list[ dict[str,any] ]
+            A list of entities to write.
+    location : str | dict[any, any]
+        Location details for the storage mechanism where metadata can be stored.
+    dag_config : dict[ str, list[any]]
+        The dag_config to write. 
+    
+    Notes
+    -----
+    This function calls FastAPI's jsonable_encoder on incoming data to make 
+    sure it is json compatible. This allows it to easily process metadata in 
+    the form of Pydantic objects.
+    """
+    # Make sure received metadata is json compatible
+    ent_type = 'dag_config'
+    config_to_write = jsonable_encoder(deepcopy(dag_config))
+    storage_writer(
+        location,
+        ent_type,
+        config_to_write
+    )
 
 
 
