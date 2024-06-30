@@ -135,7 +135,7 @@ def write_dag_config(
     """
     # Make sure received metadata is json compatible
     ent_type = 'dag_config'
-    config_to_write = jsonable_encoder(deepcopy(metadata_obj_or_json))
+    config_to_write = jsonable_encoder(deepcopy(dag_config))
     storage_writer(
         location,
         ent_type,
