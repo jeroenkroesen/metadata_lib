@@ -488,7 +488,7 @@ def objectify_flat_instance(instance: dict[str, any]) -> SimpleNamespace:
 
 def flatten_instance(
     pipeline: Pipeline, 
-    instance_nr: int,
+    instance_nr: int | None = None,
     objectify_output: bool = True
 ) -> dict[str, any] | SimpleNamespace:
     """Take a Pydantic object of deeply integrated Pipeline and instance-nr
@@ -498,11 +498,12 @@ def flatten_instance(
     ----------
     pipeline : Pipeline
         A deeply connected (integrated) pipeline object
-    instance_nr : int
+    instance_nr : int | None (Default: None)
         The list index of the instance to be flattened. An instance is a 
         single input_output pair, although it can contain multiple inputs and 
         multiple outputs. A compound pipeline can have multiple instances 
         whereas a single pipeline can have only one. 
+        If instance_nr is None, A single scope pipeline is assumed.
     objectify_output : bool (Default: True)
         If True, run objectify_flat_instance() on the output to produce a 
         structure of SimpleNamespaces rather than dicts, allowing easier access 
@@ -527,77 +528,148 @@ def flatten_instance(
     if pl.config:
         instance_conf.update(pl.config)
     
-    # Process input
-    if isinstance(pl.input_output[instance_nr]['input'], list):
-        # Listwise input logic
-        instance_conf['i'] = [] # Multiple input entities in a list
-        for ent_nr, entity in enumerate(pl.input_output[instance_nr]['input']):
-            input_instance = pl.input_output[instance_nr]['input'][ent_nr]
-            current_ent = {}
+    if instance_nr: # Compound pipeline
+        # Process input
+        if isinstance(pl.input_output[instance_nr]['input'], list):
+            # Listwise input logic
+            instance_conf['i'] = [] # Multiple input entities in a list
+            for ent_nr, entity in enumerate(pl.input_output[instance_nr]['input']):
+                input_instance = pl.input_output[instance_nr]['input'][ent_nr]
+                current_ent = {}
+                for entkey in FLAT_ENT_KEYS:
+                    if entkey == 'entity_schema':
+                        # unpack schema to dict
+                        current_ent[f'ent_{entkey}'] = getattr(input_instance, entkey).model_dump()
+                    else:
+                        current_ent[f'ent_{entkey}'] = getattr(input_instance, entkey)
+                for syskey in FLAT_SYS_KEYS:
+                    current_ent[f'sys_{syskey}'] = getattr(input_instance.system, syskey)
+                if input_instance.config:
+                    current_ent.update(input_instance.config)
+                if input_instance.system.config:
+                    current_ent.update(input_instance.system.config)
+                instance_conf['i'].append(current_ent)
+        else:
+            # Single input instance logic
+            instance_conf['i'] = {} # Keys from input entities
+            input_instance = pl.input_output[instance_nr]['input']
             for entkey in FLAT_ENT_KEYS:
                 if entkey == 'entity_schema':
-                    # unpack schema to dict
-                    current_ent[f'ent_{entkey}'] = getattr(input_instance, entkey).model_dump()
+                    instance_conf['i'][f'ent_{entkey}'] = getattr(input_instance, entkey).model_dump()
                 else:
-                    current_ent[f'ent_{entkey}'] = getattr(input_instance, entkey)
+                    instance_conf['i'][f'ent_{entkey}'] = getattr(input_instance, entkey)
             for syskey in FLAT_SYS_KEYS:
-                current_ent[f'sys_{syskey}'] = getattr(input_instance.system, syskey)
+                instance_conf['i'][f'sys_{syskey}'] = getattr(input_instance.system, syskey)
             if input_instance.config:
-                current_ent.update(input_instance.config)
+                instance_conf['i'].update(input_instance.config)
             if input_instance.system.config:
-                current_ent.update(input_instance.system.config)
-            instance_conf['i'].append(current_ent)
-    else:
-        # Single input instance logic
-        instance_conf['i'] = {} # Keys from input entities
-        input_instance = pl.input_output[instance_nr]['input']
-        for entkey in FLAT_ENT_KEYS:
-            if entkey == 'entity_schema':
-                instance_conf['i'][f'ent_{entkey}'] = getattr(input_instance, entkey).model_dump()
-            else:
-                instance_conf['i'][f'ent_{entkey}'] = getattr(input_instance, entkey)
-        for syskey in FLAT_SYS_KEYS:
-            instance_conf['i'][f'sys_{syskey}'] = getattr(input_instance.system, syskey)
-        if input_instance.config:
-            instance_conf['i'].update(input_instance.config)
-        if input_instance.system.config:
-            instance_conf['i'].update(input_instance.system.config)
-    
-    # Proces output
-    if isinstance(pl.input_output[instance_nr]['output'], list):
-        # Listwise output logic
-        instance_conf['o'] = [] # Multiple output entities in a list
-        for ent_nr, entity in enumerate(pl.input_output[instance_nr]['output']):
-            output_instance = pl.input_output[instance_nr]['output'][ent_nr]
-            current_ent = {}
+                instance_conf['i'].update(input_instance.system.config)
+        
+        # Proces output
+        if isinstance(pl.input_output[instance_nr]['output'], list):
+            # Listwise output logic
+            instance_conf['o'] = [] # Multiple output entities in a list
+            for ent_nr, entity in enumerate(pl.input_output[instance_nr]['output']):
+                output_instance = pl.input_output[instance_nr]['output'][ent_nr]
+                current_ent = {}
+                for entkey in FLAT_ENT_KEYS:
+                    if entkey == 'entity_schema':
+                        current_ent[f'ent_{entkey}'] = getattr(output_instance, entkey).model_dump()
+                    else:
+                        current_ent[f'ent_{entkey}'] = getattr(output_instance, entkey)
+                for syskey in FLAT_SYS_KEYS:
+                    current_ent[f'sys_{syskey}'] = getattr(output_instance.system, syskey)
+                if output_instance.config:
+                    current_ent.update(output_instance.config)
+                if output_instance.system.config:
+                    current_ent.update(output_instance.system.config)
+                instance_conf['o'].append(current_ent)
+        else:
+            # Single output instance logic
+            instance_conf['o'] = {} # Keys from output entities
+            output_instance = pl.input_output[instance_nr]['output']
             for entkey in FLAT_ENT_KEYS:
                 if entkey == 'entity_schema':
-                    current_ent[f'ent_{entkey}'] = getattr(output_instance, entkey).model_dump()
+                    instance_conf['o'][f'ent_{entkey}'] = getattr(output_instance, entkey).model_dump()
                 else:
-                    current_ent[f'ent_{entkey}'] = getattr(output_instance, entkey)
+                    instance_conf['o'][f'ent_{entkey}'] = getattr(output_instance, entkey)
             for syskey in FLAT_SYS_KEYS:
-                current_ent[f'sys_{syskey}'] = getattr(output_instance.system, syskey)
+                instance_conf['o'][f'sys_{syskey}'] = getattr(output_instance.system, syskey)
             if output_instance.config:
-                current_ent.update(output_instance.config)
+                instance_conf['o'].update(output_instance.config)
             if output_instance.system.config:
-                current_ent.update(output_instance.system.config)
-            instance_conf['o'].append(current_ent)
-    else:
-        # Single output instance logic
-        instance_conf['o'] = {} # Keys from output entities
-        output_instance = pl.input_output[instance_nr]['output']
-        for entkey in FLAT_ENT_KEYS:
-            if entkey == 'entity_schema':
-                instance_conf['o'][f'ent_{entkey}'] = getattr(output_instance, entkey).model_dump()
-            else:
-                instance_conf['o'][f'ent_{entkey}'] = getattr(output_instance, entkey)
-        for syskey in FLAT_SYS_KEYS:
-            instance_conf['o'][f'sys_{syskey}'] = getattr(output_instance.system, syskey)
-        if output_instance.config:
-            instance_conf['o'].update(output_instance.config)
-        if output_instance.system.config:
-            instance_conf['o'].update(output_instance.system.config)
-    
+                instance_conf['o'].update(output_instance.system.config)
+    else: # Single scope pipeline
+    # Process input
+        if isinstance(pl.input_output['input'], list):
+            # Listwise input logic
+            instance_conf['i'] = [] # Multiple input entities in a list
+            for ent_nr, entity in enumerate(pl.input_output['input']):
+                input_instance = pl.input_output['input'][ent_nr]
+                current_ent = {}
+                for entkey in FLAT_ENT_KEYS:
+                    if entkey == 'entity_schema':
+                        # unpack schema to dict
+                        current_ent[f'ent_{entkey}'] = getattr(input_instance, entkey).model_dump()
+                    else:
+                        current_ent[f'ent_{entkey}'] = getattr(input_instance, entkey)
+                for syskey in FLAT_SYS_KEYS:
+                    current_ent[f'sys_{syskey}'] = getattr(input_instance.system, syskey)
+                if input_instance.config:
+                    current_ent.update(input_instance.config)
+                if input_instance.system.config:
+                    current_ent.update(input_instance.system.config)
+                instance_conf['i'].append(current_ent)
+        else:
+            # Single input instance logic
+            instance_conf['i'] = {} # Keys from input entities
+            input_instance = pl.input_output['input']
+            for entkey in FLAT_ENT_KEYS:
+                if entkey == 'entity_schema':
+                    instance_conf['i'][f'ent_{entkey}'] = getattr(input_instance, entkey).model_dump()
+                else:
+                    instance_conf['i'][f'ent_{entkey}'] = getattr(input_instance, entkey)
+            for syskey in FLAT_SYS_KEYS:
+                instance_conf['i'][f'sys_{syskey}'] = getattr(input_instance.system, syskey)
+            if input_instance.config:
+                instance_conf['i'].update(input_instance.config)
+            if input_instance.system.config:
+                instance_conf['i'].update(input_instance.system.config)
+        
+        # Proces output
+        if isinstance(pl.input_output['output'], list):
+            # Listwise output logic
+            instance_conf['o'] = [] # Multiple output entities in a list
+            for ent_nr, entity in enumerate(pl.input_output['output']):
+                output_instance = pl.input_output['output'][ent_nr]
+                current_ent = {}
+                for entkey in FLAT_ENT_KEYS:
+                    if entkey == 'entity_schema':
+                        current_ent[f'ent_{entkey}'] = getattr(output_instance, entkey).model_dump()
+                    else:
+                        current_ent[f'ent_{entkey}'] = getattr(output_instance, entkey)
+                for syskey in FLAT_SYS_KEYS:
+                    current_ent[f'sys_{syskey}'] = getattr(output_instance.system, syskey)
+                if output_instance.config:
+                    current_ent.update(output_instance.config)
+                if output_instance.system.config:
+                    current_ent.update(output_instance.system.config)
+                instance_conf['o'].append(current_ent)
+        else:
+            # Single output instance logic
+            instance_conf['o'] = {} # Keys from output entities
+            output_instance = pl.input_output['output']
+            for entkey in FLAT_ENT_KEYS:
+                if entkey == 'entity_schema':
+                    instance_conf['o'][f'ent_{entkey}'] = getattr(output_instance, entkey).model_dump()
+                else:
+                    instance_conf['o'][f'ent_{entkey}'] = getattr(output_instance, entkey)
+            for syskey in FLAT_SYS_KEYS:
+                instance_conf['o'][f'sys_{syskey}'] = getattr(output_instance.system, syskey)
+            if output_instance.config:
+                instance_conf['o'].update(output_instance.config)
+            if output_instance.system.config:
+                instance_conf['o'].update(output_instance.system.config)
     if objectify_output:
         # Transform dict structure to simplenamespace objects
         return objectify_flat_instance(instance_conf)
@@ -630,14 +702,23 @@ def integrated_to_dag_config(
             enabled_pipelines.append(pl)
     conf = {}
     for pl in enabled_pipelines:
-        instance_list = []
-        for i, instance in enumerate(pl.input_output):
-            instance_list.append(flatten_instance(
+        if isinstance(pl.input_output, list):
+            # Compound pipeline, iterate input_output
+            instance_list = []
+            for i, instance in enumerate(pl.input_output):
+                instance_list.append(flatten_instance(
+                    pipeline=pl,
+                    instance_nr=i,
+                    objectify_output=False
+                ))
+            conf[pl.unid] = instance_list
+        else:
+            # Single pipeline
+            conf[pl.unid] = flatten_instance(
                 pipeline=pl,
-                instance_nr=i,
+                instance_nr=None,
                 objectify_output=False
-            ))
-        conf[pl.unid] = instance_list
+            )
     return conf
 
 
