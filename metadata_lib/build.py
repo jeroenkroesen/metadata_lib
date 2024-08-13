@@ -757,25 +757,46 @@ def pipeline_unid_refs_to_ids(
     if isinstance(pipeline.namespace, str):
         pipeline.namespace = metadata_unid_idx['namespaces_unid_idx'][pipeline.namespace].id
     # input_output
-    for i, instance in enumerate(pipeline.input_output):
-        if isinstance(instance['input'], list):
+    if isinstance(pipeline.input_output, list):
+        for i, instance in enumerate(pipeline.input_output):
+            if isinstance(instance['input'], list):
+                # Multiple input entities. Iterate
+                for j, inent in enumerate(instance['input']):
+                    if isinstance(inent, str):
+                        pipeline.input_output[i]['input'][j] = metadata_unid_idx['data_entities_unid_idx'][inent].id
+            else:
+                # Single input entity
+                if isinstance(instance['input'], str):
+                    instance['input'] = metadata_unid_idx['data_entities_unid_idx'][instance['input']].id
+            if isinstance(instance['output'], list):
+                # Multiple output entities. Iterate
+                for j, outent in enumerate(instance['output']):
+                    if isinstance(outent, str):
+                        pipeline.input_output[i]['output'][j] = metadata_unid_idx['data_entities_unid_idx'][outent].id
+            else:
+                # Single output entity
+                if isinstance(instance['output'], str):
+                    instance['output'] = metadata_unid_idx['data_entities_unid_idx'][instance['output']].id
+    else:
+        # Single scope pipeline. Do not iterate
+        if isinstance(pipeline.input_output['input'], list):
             # Multiple input entities. Iterate
-            for j, inent in enumerate(instance['input']):
+            for j, inent in enumerate(pipeline.input_output['input']):
                 if isinstance(inent, str):
-                    pipeline.input_output[i]['input'][j] = metadata_unid_idx['data_entities_unid_idx'][inent].id
+                    pipeline.input_output['input'][j] = metadata_unid_idx['data_entities_unid_idx'][inent].id
         else:
             # Single input entity
-            if isinstance(instance['input'], str):
-                instance['input'] = metadata_unid_idx['data_entities_unid_idx'][instance['input']].id
-        if isinstance(instance['output'], list):
+            if isinstance(pipeline.input_output['input'], str):
+                pipeline.input_output['input'] = metadata_unid_idx['data_entities_unid_idx'][pipeline.input_output['input']].id
+        if isinstance(pipeline.input_output['output'], list):
             # Multiple output entities. Iterate
-            for j, outent in enumerate(instance['output']):
+            for j, outent in enumerate(pipeline.input_output['output']):
                 if isinstance(outent, str):
-                    pipeline.input_output[i]['output'][j] = metadata_unid_idx['data_entities_unid_idx'][outent].id
+                    pipeline.input_output['output'][j] = metadata_unid_idx['data_entities_unid_idx'][outent].id
         else:
             # Single output entity
-            if isinstance(instance['output'], str):
-                instance['output'] = metadata_unid_idx['data_entities_unid_idx'][instance['output']].id
+            if isinstance(pipeline.input_output['output'], str):
+                pipeline.input_output['output'] = metadata_unid_idx['data_entities_unid_idx'][pipeline.input_output['output']].id
     return pipeline
 
 
