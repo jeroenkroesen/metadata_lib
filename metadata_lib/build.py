@@ -637,8 +637,7 @@ def integrated_to_dag_config(
                 instance_nr=i,
                 objectify_output=False
             ))
-        pipeline_identifier = pl.unid[:pl.unid.rfind('.')]
-        conf[pipeline_identifier] = instance_list
+        conf[pl.unid] = instance_list
     return conf
 
 
