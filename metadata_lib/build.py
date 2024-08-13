@@ -410,25 +410,44 @@ def integrate_pipelines(
             pl.namespace = ns_byid[pl.namespace].name
         else:
             pl.namespace = ns_byid[pl.namespace]
-        # Iterate over this pipelines' instances
-        for i, instance in enumerate(pl.input_output):
-            ## Connect entity objects to their integer id in inputs
-            if isinstance(instance['input'], list):
+        if isinstance(pl.input_output, list):
+            # Compound pipeline. Iterate over this pipelines' instances
+            for i, instance in enumerate(pl.input_output):
+                ## Connect entity objects to their integer id in inputs
+                if isinstance(instance['input'], list):
+                    # List style input
+                    for j, inent in enumerate(instance['input']):
+                        pl.input_output[i]['input'][j] = ent_byid[inent]
+                else:
+                    # Integer input
+                    pl.input_output[i]['input'] = ent_byid[instance['input']]
+                ## Connect entity objects to their integer id in outputs
+                if isinstance(instance['output'], list):
+                    # List style output
+                    for j, outent in enumerate(instance['output']):
+                        pl.input_output[i]['output'][j] = ent_byid[outent]
+                else:
+                    # Integer style output
+                    pl.input_output[i]['output'] = ent_byid[instance['output']]
+            pipelines.append(pl)
+        else:
+            # Single Pipeline with dict input_output
+            if isinstance(pl.input_output['input'], list):
                 # List style input
-                for j, inent in enumerate(instance['input']):
-                    pl.input_output[i]['input'][j] = ent_byid[inent]
+                for j, inent in enumerate(pl.input_output['input']):
+                    pl.input_output['input'][j] = ent_byid[inent]
             else:
                 # Integer input
-                pl.input_output[i]['input'] = ent_byid[instance['input']]
+                pl.input_output['input'] = ent_byid[pl.input_output['input']]
             ## Connect entity objects to their integer id in outputs
-            if isinstance(instance['output'], list):
+            if isinstance(pl.input_output['output'], list):
                 # List style output
-                for j, outent in enumerate(instance['output']):
-                    pl.input_output[i]['output'][j] = ent_byid[outent]
+                for j, outent in enumerate(pl.input_output['output']):
+                    pl.input_output['output'][j] = ent_byid[outent]
             else:
                 # Integer style output
-                pl.input_output[i]['output'] = ent_byid[instance['output']]
-        pipelines.append(pl)
+                pl.input_output['output'] = ent_byid[pl.input_output['output']]
+            pipelines.append(pl)
     
     return pipelines
 
