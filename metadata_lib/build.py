@@ -528,7 +528,7 @@ def flatten_instance(
     if pl.config:
         instance_conf.update(pl.config)
     
-    if instance_nr: # Compound pipeline
+    if instance_nr is not None: # Compound pipeline
         # Process input
         if isinstance(pl.input_output[instance_nr]['input'], list):
             # Listwise input logic
@@ -600,7 +600,7 @@ def flatten_instance(
             if output_instance.system.config:
                 instance_conf['o'].update(output_instance.system.config)
     else: # Single scope pipeline
-    # Process input
+        # Process input
         if isinstance(pl.input_output['input'], list):
             # Listwise input logic
             instance_conf['i'] = [] # Multiple input entities in a list
@@ -670,6 +670,7 @@ def flatten_instance(
                 instance_conf['o'].update(output_instance.config)
             if output_instance.system.config:
                 instance_conf['o'].update(output_instance.system.config)
+    
     if objectify_output:
         # Transform dict structure to simplenamespace objects
         return objectify_flat_instance(instance_conf)
