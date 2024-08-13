@@ -443,12 +443,89 @@ def validate_pipeline(
         raise TypeError(emsg)
     
     # Entities referenced in input_output exist
-    # Iterate instances
-    for instance in pipeline.input_output:
+    if isinstance(pipeline.input_output, list): # A compound pipeline, iterate
+        for instance in pipeline.input_output:
+            # Proces input
+            if isinstance(instance['input'], list):
+                # List style: iterate multiple entities
+                for inent in instance['input']:
+                    if isinstance(inent, int):
+                        if not id_exists(metadata_id_idx, 'data_entities', inent):
+                            result['valid'] = False
+                            emsg = f'Input entity {inent} does not exist.'
+                            result['errors'].append(emsg)
+                    elif isinstance(inent, str):
+                        if not unid_exists(
+                            metadata_unid_idx, 'data_entities', inent
+                        ):
+                            result['valid'] = False
+                            emsg = f'Input entity {inent} does not exist.'
+                            result['errors'].append(emsg)
+                    else:
+                        emsg = f'Cannot validate input entity if it is not a str or int'
+                        raise TypeError(emsg)
+            else:
+                # Single input
+                if isinstance(instance['input'], int):
+                    if not id_exists(
+                        metadata_id_idx, 'data_entities', instance['input']
+                    ):
+                        result['valid'] = False
+                        emsg = f'Input entity {instance["input"]} does not exist.'
+                        result['errors'].append(emsg)
+                elif isinstance(instance['input'], str):
+                    if not unid_exists(
+                        metadata_unid_idx, 'data_entities', instance['input']
+                    ):
+                        result['valid'] = False
+                        emsg = f'Input entity {instance["input"]} does not exist.'
+                        result['errors'].append(emsg)
+                else:
+                    emsg = f'Cannot validate input entity if it is not a str or int'
+                    raise TypeError(emsg)
+            # Proces output
+            if isinstance(instance['output'], list):
+                # List style: iterate multiple entities
+                for outent in instance['output']:
+                    if isinstance(outent, int):
+                        if not id_exists(metadata_id_idx, 'data_entities', outent):
+                            result['valid'] = False
+                            emsg = f'Output entity {outent} does not exist.'
+                            result['errors'].append(emsg)
+                    elif isinstance(outent, str):
+                        if not unid_exists(
+                            metadata_unid_idx, 'data_entities', outent
+                        ):
+                            result['valid'] = False
+                            emsg = f'Output entity {outent} does not exist.'
+                            result['errors'].append(emsg)
+                    else:
+                        emsg = f'Cannot validate output entity if it is not a str or int'
+                        raise TypeError(emsg)
+            else:
+                # Single output
+                if isinstance(instance['output'], int):
+                    if not id_exists(
+                        metadata_id_idx, 'data_entities', instance['output']
+                    ):
+                        result['valid'] = False
+                        emsg = f'Output entity {instance["output"]} does not exist.'
+                        result['errors'].append(emsg)
+                elif isinstance(instance['output'], str):
+                    if not unid_exists(
+                        metadata_unid_idx, 'data_entities', instance['output']
+                    ):
+                        result['valid'] = False
+                        emsg = f'Output entity {instance["output"]} does not exist.'
+                        result['errors'].append(emsg)
+                else:
+                    emsg = f'Cannot validate output entity if it is not a str or int'
+                    raise TypeError(emsg)
+    else: # Single scope pl
         # Proces input
-        if isinstance(instance['input'], list):
+        if isinstance(pipeline.input_output['input'], list):
             # List style: iterate multiple entities
-            for inent in instance['input']:
+            for inent in pipeline.input_output['input']:
                 if isinstance(inent, int):
                     if not id_exists(metadata_id_idx, 'data_entities', inent):
                         result['valid'] = False
@@ -466,27 +543,27 @@ def validate_pipeline(
                     raise TypeError(emsg)
         else:
             # Single input
-            if isinstance(instance['input'], int):
+            if isinstance(pipeline.input_output['input'], int):
                 if not id_exists(
-                    metadata_id_idx, 'data_entities', instance['input']
+                    metadata_id_idx, 'data_entities', pipeline.input_output['input']
                 ):
                     result['valid'] = False
-                    emsg = f'Input entity {instance["input"]} does not exist.'
+                    emsg = f'Input entity {pipeline.input_output["input"]} does not exist.'
                     result['errors'].append(emsg)
-            elif isinstance(instance['input'], str):
+            elif isinstance(pipeline.input_output['input'], str):
                 if not unid_exists(
-                    metadata_unid_idx, 'data_entities', instance['input']
+                    metadata_unid_idx, 'data_entities', pipeline.input_output['input']
                 ):
                     result['valid'] = False
-                    emsg = f'Input entity {instance["input"]} does not exist.'
+                    emsg = f'Input entity {pipeline.input_output["input"]} does not exist.'
                     result['errors'].append(emsg)
             else:
                 emsg = f'Cannot validate input entity if it is not a str or int'
                 raise TypeError(emsg)
         # Proces output
-        if isinstance(instance['output'], list):
+        if isinstance(pipeline.input_output['output'], list):
             # List style: iterate multiple entities
-            for outent in instance['output']:
+            for outent in pipeline.input_output['output']:
                 if isinstance(outent, int):
                     if not id_exists(metadata_id_idx, 'data_entities', outent):
                         result['valid'] = False
@@ -504,19 +581,19 @@ def validate_pipeline(
                     raise TypeError(emsg)
         else:
             # Single output
-            if isinstance(instance['output'], int):
+            if isinstance(pipeline.input_output['output'], int):
                 if not id_exists(
-                    metadata_id_idx, 'data_entities', instance['output']
+                    metadata_id_idx, 'data_entities', pipeline.input_output['output']
                 ):
                     result['valid'] = False
-                    emsg = f'Output entity {instance["output"]} does not exist.'
+                    emsg = f'Output entity {pipeline.input_output["output"]} does not exist.'
                     result['errors'].append(emsg)
-            elif isinstance(instance['output'], str):
+            elif isinstance(pipeline.input_output['output'], str):
                 if not unid_exists(
-                    metadata_unid_idx, 'data_entities', instance['output']
+                    metadata_unid_idx, 'data_entities', pipeline.input_output['output']
                 ):
                     result['valid'] = False
-                    emsg = f'Output entity {instance["output"]} does not exist.'
+                    emsg = f'Output entity {pipeline.input_output["output"]} does not exist.'
                     result['errors'].append(emsg)
             else:
                 emsg = f'Cannot validate output entity if it is not a str or int'
