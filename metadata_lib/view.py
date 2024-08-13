@@ -62,24 +62,43 @@ def all_ids_to_unids(
     for pl in metadata_id_idx['pipelines_idx'].values():
         # Set namespace to UNID
         pl.namespace = ns_byid[pl.namespace].unid
-        # Iterate over the pipeline's instances
-        for i, instance in enumerate(pl.input_output):
-            ## Deal with input entities in the current instance
-            if isinstance(instance['input'], list):
+        if isinstance(pl.input_output, list):
+            # Compound. Iterate over the pipeline's instances
+            for i, instance in enumerate(pl.input_output):
+                ## Deal with input entities in the current instance
+                if isinstance(instance['input'], list):
+                    # List style input instance, multiple input entities. Iterate.
+                    for j, inent in enumerate(instance['input']):
+                        pl.input_output[i]['input'][j] = ent_byid[inent].unid
+                else:
+                    # Single entity input. Just assign
+                    pl.input_output[i]['input'] = ent_byid[instance['input']].unid
+                ## Deal with output entities in the current instance
+                if isinstance(instance['output'], list):
+                    # List style output instance, multiple output entities. Iterate.
+                    for j, outent in enumerate(instance['output']):
+                        pl.input_output[i]['output'][j] = ent_byid[outent].unid
+                else:
+                    # Single entity output. Just assign
+                    pl.input_output[i]['output'] = ent_byid[instance['output']].unid
+        else:
+            # Single scope pipeline
+            if isinstance(pl.input_output['input'], list):
                 # List style input instance, multiple input entities. Iterate.
-                for j, inent in enumerate(instance['input']):
-                    pl.input_output[i]['input'][j] = ent_byid[inent].unid
+                for j, inent in enumerate(pl.input_output['input']):
+                    pl.input_output['input'][j] = ent_byid[inent].unid
             else:
                 # Single entity input. Just assign
-                pl.input_output[i]['input'] = ent_byid[instance['input']].unid
+                pl.input_output['input'] = ent_byid[instance['input']].unid
             ## Deal with output entities in the current instance
-            if isinstance(instance['output'], list):
+            if isinstance(pl.input_output['output'], list):
                 # List style output instance, multiple output entities. Iterate.
-                for j, outent in enumerate(instance['output']):
-                    pl.input_output[i]['output'][j] = ent_byid[outent].unid
+                for j, outent in enumerate(pl.input_output['output']):
+                    pl.input_output['output'][j] = ent_byid[outent].unid
             else:
                 # Single entity output. Just assign
-                pl.input_output[i]['output'] = ent_byid[instance['output']].unid
+                pl.input_output['output'] = ent_byid[instance['output']].unid
+        
         md_out['pipelines'].append(pl)
     
     return md_out
