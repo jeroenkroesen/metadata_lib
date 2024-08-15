@@ -89,7 +89,7 @@ def all_ids_to_unids(
                     pl.input_output['input'][j] = ent_byid[inent].unid
             else:
                 # Single entity input. Just assign
-                pl.input_output['input'] = ent_byid[instance['input']].unid
+                pl.input_output['input'] = ent_byid[pl.input_output['input']].unid
             ## Deal with output entities in the current instance
             if isinstance(pl.input_output['output'], list):
                 # List style output instance, multiple output entities. Iterate.
@@ -97,7 +97,7 @@ def all_ids_to_unids(
                     pl.input_output['output'][j] = ent_byid[outent].unid
             else:
                 # Single entity output. Just assign
-                pl.input_output['output'] = ent_byid[instance['output']].unid
+                pl.input_output['output'] = ent_byid[pl.input_output['output']].unid
         
         md_out['pipelines'].append(pl)
     
